@@ -1,17 +1,19 @@
 source("init.R")
+#source("functions.R")
 
 ### Global Variables ###
 db <- SQLite()
 con <- dbConnect(drv = db, fb.db)
 
-### Functions ###
+# The Numbers of records
+# bids:7656335, train:2014, test:4701
 
 
 #### Start ###
 # Initial data.frames...
 
 # No good since column names are returned.
-# query <- "SELECT bidder_id, outcome FROM train"
+#   query <- "SELECT bidder_id, outcome FROM train"
 query <- "SELECT bidder_id FROM train"
 train  <- data.frame(bidder_id = dbGetQuery(con, query))
 query <- "SELECT bidder_id, outcome FROM train"
@@ -26,9 +28,19 @@ test  <- data.frame(bidder_id = dbGetQuery(con, query))
 query <- paste0("SELECT bidder_id, COUNT(bidder_id) as bids ",
                 "FROM bids GROUP BY bidder_id")
 bids <- dbGetQuery(con, query)
+bids$bids <- log1p(bids$bids)
 train <- dplyr::left_join(train, bids, by="bidder_id")
-test  <- dplyr::left_join(test, bids, by="bidder_id")
+test  <- dplyr::left_join(test,  bids, by="bidder_id")
 # Done.
+
+
+source("functions.R")
+
+# Time difference statistics per user... ")
+resp <- getResponseDiff(con)
+resp[,2:5] <- log1p(resp[,2:5])
+train <- dplyr::left_join(train, resp, by="bidder_id")
+test  <- dplyr::left_join(test,  resp, by="bidder_id")
 
 
 dbDisconnect(con)
