@@ -33,14 +33,18 @@ train <- dplyr::left_join(train, bids, by="bidder_id")
 test  <- dplyr::left_join(test,  bids, by="bidder_id")
 # Done.
 
-
-source("functions.R")
-
 # Time difference statistics per user... ")
 resp <- getResponseDiff(con)
 resp[,2:5] <- log1p(resp[,2:5])
 train <- dplyr::left_join(train, resp, by="bidder_id")
 test  <- dplyr::left_join(test,  resp, by="bidder_id")
+
+source("functions.R")
+# url_sum
+urlSum <- getUrlSum(con)
+urlSum[,2:3] <- log1p(urlSum[,2:3])
+train <- dplyr::left_join(train, urlSum, by="bidder_id")
+test  <- dplyr::left_join(test,  urlSum, by="bidder_id")
 
 
 dbDisconnect(con)

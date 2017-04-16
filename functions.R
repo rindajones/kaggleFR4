@@ -1,5 +1,3 @@
-
-
 # mean_resp, sd_resp, meian_resp, min_resp, fast_resp
 #
 getResponseDiff <- function(con) {
@@ -34,11 +32,23 @@ getResponseDiff <- function(con) {
     ret[is.infinite(ret$min_resp), "min_resp"] <- 2*max(ret[!is.infinite(ret$min_resp),"min_resp"],
                                                     na.rm=TRUE)
     
-
     # instant_resp: the number of responses done on same time
     query <- "SELECT bidder_id, count(time) AS instant_resp FROM bids GROUP BY bidder_id"
     res2  <- dbGetQuery(con, query)
     ret <- dplyr::left_join(ret, res2, by="bidder_id")
-
     return(ret)
 }
+
+# url_sum: Bids coming out from a particular Domain
+# mean, median of the number GROUP BY bidder_id, auction
+getUrlSum <- function(con) {
+    query <- paste0("SELECT bidder_id, COUNT(DISTINCT url) as link_count, ",
+                    "auction FROM bids GROUP by bidder_id, auction")
+    res <- dbGetQuery(con, query)
+    ret <- res %>% dplyr::group_by(bidder_id) %>%
+      dplyr::summarise(mean_url_sum=mean(link_count),
+                       median_url_sum=median(link_count))
+    return(ret)
+}
+
+
