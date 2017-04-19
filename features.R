@@ -1,5 +1,5 @@
 source("init.R")
-#source("functions.R")
+source("functions.R")
 
 ### Global Variables ###
 db <- SQLite()
@@ -7,7 +7,6 @@ con <- dbConnect(drv = db, fb.db)
 
 # The Numbers of records
 # bids:7656335, train:2014, test:4701
-
 
 #### Start ###
 # Initial data.frames...
@@ -35,16 +34,26 @@ test  <- dplyr::left_join(test,  bids, by="bidder_id")
 
 # Time difference statistics per user... ")
 resp <- getResponseDiff(con)
-resp[,2:5] <- log1p(resp[,2:5])
 train <- dplyr::left_join(train, resp, by="bidder_id")
 test  <- dplyr::left_join(test,  resp, by="bidder_id")
 
 source("functions.R")
-# url_sum
-urlSum <- getUrlSum(con)
-urlSum[,2:3] <- log1p(urlSum[,2:3])
-train <- dplyr::left_join(train, urlSum, by="bidder_id")
-test  <- dplyr::left_join(test,  urlSum, by="bidder_id")
+totals <- getTotals(con)
+train <- dplyr::left_join(train, totals, by="bidder_id")
+test  <- dplyr::left_join(test,  totals, by="bidder_id")
+
+# merchandise
+query <- paste0("SELECT bidder_id, merchandise",
+                " FROM bids GROUP by bidder_id")
+merch <- dbGetQuery(con, query)
+merch[,2] <- as.factor(merch[,2])
+train <- dplyr::left_join(train, merch, by="bidder_id")
+test  <- dplyr::left_join(test,  merch, by="bidder_id")
+
+bidsRates <- getBidsRates(con)
+train <- dplyr::left_join(train, bidsRates, by="bidder_id")
+test  <- dplyr::left_join(test,  bidsRates, by="bidder_id")
+
 
 
 dbDisconnect(con)

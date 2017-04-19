@@ -10,4 +10,4 @@ library(gbm)
 library(Boruta)
 library(dplyr) # by rinda
 
-fb.db <- "~/Downloads/kaggle/facebook_IV_Human_or_Robot/fb.db"
+fb.db <- "~/Documents/kaggle/facebook_IV_Human_or_Robot/fb.db"
