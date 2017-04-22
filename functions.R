@@ -1,5 +1,5 @@
-# mean_resp, sd_resp, meian_resp, min_resp, fast_resp
-#
+# resp_mean, resp_sd, resp_meian, resp_min
+# resp_fast, resp_fasst_rate
 getResponseDiff <- function(con) {
     query <- "SELECT bidder_id, auction, time FROM bids"
     res <- dbGetQuery(con, query)
@@ -18,18 +18,18 @@ getResponseDiff <- function(con) {
       }
     }
     ret <- res %>% group_by(bidder_id) %>%
-         summarize(mean_resp=mean(diff(sort(time))), sd_resp=sd(diff(sort(time))),
-                   median_resp=median(diff(sort(time))), min_resp=min(diff(sort(time))),
-                   fast_resp=fast(diff(sort(time))))
+         summarize(resp_mean=mean(diff(sort(time))), resp_sd=sd(diff(sort(time))),
+                   resp_median=median(diff(sort(time))), resp_min=min(diff(sort(time))),
+                   resp_fast_rate=fast(diff(sort(time))))
     
     # NA check: Replaced by the value which is the maximum x 2.
     #  最大値の二倍値で欠損値を補完
-    ret[is.na(ret$mean_resp),  "mean_resp"]   <- 2*max(ret$mean_resp,na.rm=TRUE)
-    ret[is.na(ret$sd_resp),    "sd_resp"]     <- 2*max(ret$sd_resp,na.rm=TRUE)
-    ret[is.na(ret$median_resp),"median_resp"] <- 2*max(ret$median_resp,na.rm=TRUE)
+    ret[is.na(ret$resp_mean),  "resp_mean"]   <- 2*max(ret$resp_mean,na.rm=TRUE)
+    ret[is.na(ret$resp_sd),    "resp_sd"]     <- 2*max(ret$resp_sd,na.rm=TRUE)
+    ret[is.na(ret$resp_median),"resp_median"] <- 2*max(ret$resp_median,na.rm=TRUE)
     
     # Infinite check: Replaced by the value which is the maximum x 2.
-    ret[is.infinite(ret$min_resp), "min_resp"] <- 2*max(ret[!is.infinite(ret$min_resp),"min_resp"],
+    ret[is.infinite(ret$resp_min), "resp_min"] <- 2*max(ret[!is.infinite(ret$resp_min),"resp_min"],
                                                     na.rm=TRUE)
     
     # instant_resp: the number of responses done on same time
@@ -38,11 +38,11 @@ getResponseDiff <- function(con) {
     ins <- dbGetQuery(con, query)
     query <- "SELECT bidder_id, COUNT(DISTINCT time) AS time FROM bids GROUP BY bidder_id"
     ins2 <- dbGetQuery(con, query)
-    ins$instant_resp <- ins$time - ins2$time
-    ins$Per_instant_resp <- ins$instant_resp/ins$time
+    ins$resp_instant <- ins$time - ins2$time
+    ins$resp_instant_rate <- ins$resp_instant/ins$time
     ins <- ins[,-2] # delete time column
     ret <- dplyr::left_join(ret, ins, by="bidder_id")
-    ret[,2:7] <- log1p(ret[,2:7])
+    #ret[,2:7] <- log1p(ret[,2:7])
     return(ret)
 }
 
@@ -69,13 +69,13 @@ getTotals <- function(con) {
 
   query <- paste0("SELECT bidder_id,",
                   "COUNT(DISTINCT url)     AS url_sum,",
-                  "COUNT(DISTINCT auction) AS no_auctions,",    
-                  "COUNT(DISTINCT device)  AS no_devices,",    
-                  "COUNT(DISTINCT country) AS no_countries,",
-                  "COUNT(DISTINCT ip)      AS no_ips",    
+                  "COUNT(DISTINCT auction) AS auction_sum,",    
+                  "COUNT(DISTINCT device)  AS device_sum,",    
+                  "COUNT(DISTINCT country) AS country_sum,",
+                  "COUNT(DISTINCT ip)      AS ip_sum",    
                   " FROM bids GROUP BY bidder_id")
   res <- dbGetQuery(con, query)
-  res[,2:5] <- log1p(res[,2:5])
+  #res[,2:5] <- log1p(res[,2:5])
   return(res)
 }
 
@@ -87,14 +87,16 @@ getBidsRates <- function(con) {
   res <- dbGetQuery(con, query)
   auction <- res %>% group_by(bidder_id) %>%
         dplyr::summarise(bids_per_auction_mean=mean(no),
-                         bids_per_auction_median=median(no))
+                         bids_per_auction_median=median(no),
+　　　　　　　　　　　　 bids_per_auction_sd=sd(no))
 
   query <- paste0("SELECT bidder_id, device, COUNT(device) AS no",
                    " FROM bids GROUP BY bidder_id, device")
   res <- dbGetQuery(con, query)
   device <- res %>% group_by(bidder_id) %>%
         dplyr::summarise(bids_per_device_mean=mean(no),
-                         bids_per_device_median=median(no))
+                         bids_per_device_median=median(no),
+                         bids_per_device_sd=sd(no))  
   ret <- dplyr::left_join(auction, device, by="bidder_id")
   
   query <- paste0("SELECT bidder_id, country, COUNT(country) AS no",
@@ -102,7 +104,8 @@ getBidsRates <- function(con) {
   res <- dbGetQuery(con, query)
   country <- res %>% group_by(bidder_id) %>%
         dplyr::summarise(bids_per_country_mean=mean(no),
-                         bids_per_country_median=median(no))
+                         bids_per_country_median=median(no),
+                         bids_per_country_sd=sd(no))
   ret <- dplyr::left_join(ret, country, by="bidder_id")
 
   query <- paste0("SELECT bidder_id, ip, COUNT(ip) AS no",
@@ -110,10 +113,18 @@ getBidsRates <- function(con) {
   res <- dbGetQuery(con, query)
   ip <- res %>% group_by(bidder_id) %>%
         dplyr::summarise(bids_per_ip_mean=mean(no),
-                         bids_per_ip_median=median(no))
+                         bids_per_ip_median=median(no),
+                         bids_per_ip_sd=sd(no))  
   ret <- dplyr::left_join(ret, ip, by="bidder_id")
+  
+  # NA check: Replaced by the value which is the maximum x 2.
+  # 最大値で欠損値を補完
+  ret[is.na(ret$bids_per_auction_sd), "bids_per_auction_sd"]<- max(ret$bids_per_auction_sd,na.rm=TRUE)
+  ret[is.na(ret$bids_per_device_sd),  "bids_per_device_sd"] <- max(ret$bids_per_device_sd,na.rm=TRUE)
+  ret[is.na(ret$bids_per_country_sd), "bids_per_country_sd"]<- max(ret$bids_per_country_sd,na.rm=TRUE)
+  ret[is.na(ret$bids_per_ip_sd),      "bids_per_ip_sd"]     <- max(ret$bids_per_ip_sd,na.rm=TRUE)  
 
-  ret[,2:9] <- log1p(ret[,2:9])
+  #ret[,2:13] <- log1p(ret[,2:13])
   return(ret)
 }
 
