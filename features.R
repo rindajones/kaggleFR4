@@ -19,7 +19,7 @@ train <- train %>% filter(bidder_id!="bidder_id")
 query <- "SELECT bidder_id, outcome FROM train"
 outcome  <- dbGetQuery(con, query)
 train <- dplyr::left_join(train, outcome, by="bidder_id")
-train$outcome <- as.numeric(train$outcome)
+train$outcome <- as.factor(train$outcome)
 query <- "SELECT bidder_id FROM test"
 test  <- data.frame(bidder_id = dbGetQuery(con, query))
 test  <- test %>% filter(bidder_id!="bidder_id")
