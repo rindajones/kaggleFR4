@@ -71,5 +71,10 @@ test  <- dplyr::inner_join(test,  bidsRates, by="bidder_id")
 dbDisconnect(con)
 
 str(train)
+trainlog <- train
+trainlog[,c(-1,-2,-16)] <-  log1p(trainlog[,c(-1,-2,-16)])
+testlog <- test
+testlog[,c(-1,-2,-15)] <-  log1p(testlog[,c(-1,-2,-15)])
+
 
 

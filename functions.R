@@ -17,8 +17,8 @@ getResponseDiff <- function(con) {
         return(0.0)
       }
     }
-    ret <- res %>% group_by(bidder_id) %>%
-         summarize(resp_mean=mean(diff(sort(time))), resp_sd=sd(diff(sort(time))),
+    ret <- res %>% dplyr::group_by(bidder_id) %>%
+         dplyr::summarise(resp_mean=mean(diff(sort(time))), resp_sd=sd(diff(sort(time))),
                    resp_median=median(diff(sort(time))), resp_min=min(diff(sort(time))),
                    resp_fast_rate=fast(diff(sort(time))))
     
@@ -128,5 +128,26 @@ getBidsRates <- function(con) {
   return(ret)
 }
 
+# The differences between human's and robot's values.
+getDiffOfResult <- function(train) {
+  # 唯一数値型ではない merchandise を除く
+　g_train <- train %>%
+    tidyr::gather(variable,value,bids:bids_per_ip_sd,-merchandise)
 
+  tsum <- g_train %>%
+    dplyr::group_by(outcome, variable) %>% dplyr::summarise(sum=sum(value))
+
+  tsum <- tsum %>% tidyr::spread(key=outcome,value=sum)
+
+  # outcome の比率に変換する
+  table(train$outcome)
+  ##    0    1
+  ## 1881  103
+  tsum[,2] <- tsum[,2]/1881
+  tsum[,3] <- tsum[,3]/103
+
+  df <- as.data.frame(tsum)
+  df$diff <- abs(df[,2]-df[,3])
+  return (df)
+}
 
