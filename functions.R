@@ -151,3 +151,7 @@ getDiffOfResult <- function(train) {
   return (df)
 }
 
+getMissingBidders <- function(allBidders, myBidders) {
+    return(allBidders[!allBidders %in% myBidders])
+}
+

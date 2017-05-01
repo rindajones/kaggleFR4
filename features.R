@@ -74,7 +74,8 @@ str(train)
 trainlog <- train
 trainlog[,c(-1,-2,-16)] <-  log1p(trainlog[,c(-1,-2,-16)])
 testlog <- test
-testlog[,c(-1,-2,-15)] <-  log1p(testlog[,c(-1,-2,-15)])
+testlog[,c(-1,-15)] <-  log1p(testlog[,c(-1,-15)])
 
+save(train, test, file = ffile)
 
 

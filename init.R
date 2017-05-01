@@ -11,3 +11,5 @@ library(Boruta)
 library(dplyr) # by rinda
 
 fb.db <- "~/Documents/kaggle/facebook_IV_Human_or_Robot/fb.db"
+
+ffile <- "~/Documents/kaggle/facebook_IV_Human_or_Robot/extractedFeatures.Rda"
