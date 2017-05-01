@@ -7,23 +7,51 @@ predictByGlm <- function(formula, train, test) {
   return(res)
 }
 
-# AUC 0.85687
-formula <- as.formula(paste0("outcome ~  resp_sd + resp_mean + resp_median + resp_min"
+train01 <- trainlog
+test01 <- testlog
+
+formula01 <- as.formula(paste0("outcome ~  resp_sd + resp_mean + resp_median + resp_min"
+                  , " + bids_per_country_sd + bids"))
+formula02 <- as.formula(paste0("outcome ~  resp_sd + resp_mean + resp_median + resp_min"
                   , " + bids_per_country_sd + bids + ip_sum"))
-# AUC 0.86474
-formula <- as.formula(paste0("outcome ~  resp_sd + resp_mean + resp_median + resp_min"
-                  , " + bids_per_country_sd + bids + ip_sum"))
-# AUC: 0.87187
-formula <- as.formula(paste0("outcome ~  resp_sd + resp_mean + resp_median + resp_min"
+formula03 <- as.formula(paste0("outcome ~  resp_sd + resp_mean + resp_median + resp_min"
                   , " + bids_per_country_sd + bids + ip_sum + bids_per_auction_sd"))
 
-# Try a 10-fold cross-validation
-aucs <- rep(0, nrow(trainlog))
-folds <- createFolds(factor(trainlog$outcome), 10)
-for (f in folds) {
-    aucs[f] <- predictByGlm(formula, trainlog[-f, ], trainlog[f, ])    
+# All the columns without correlations.
+#
+# Omit columns(bidder_id, outcome, merchandise), then delete some columns to avoid correlation.
+t <- train01[,-(findCorrelation(cor(train01[, c(-1,-2,-16)]))+1)]
+t <- t[,-1] # delete bidder_id
+f <- "outcome ~ "
+flg <- TRUE
+for (n in names(t)) {
+  if (flg) {
+    f <- paste0(f, n)
+    flg <- FALSE
+  } else {
+    f <- paste0(f, "+", n)
+  }
 }
-auc <- roc(train$outcome, aucs)$auc
+f
+## [1]"outome ~ bids+resp_mean+resp_median+resp_min+resp_fast_rate+resp_instant+resp_instant_rate+device_sum+ip_sum+merchandise+bids_per_auction_mean+bids_per_auction_median+bids_per_auction_sd+bids_per_device_mean+bids_per_device_median+bids_per_device_sd+bids_per_country_mean+bids_per_country_median+bids_per_ip_mean+bids_per_ip_median+bids_per_ip_sd"
+formula04 <- as.formula(f)
+
+# CV AUC: 0.85823
+#formula <- formula01
+# CV AUC: 0.86474
+#formula <- formula02
+# CV AUC: 0.86744
+#formula <- formula03
+# CV AUC: 0.88906
+formula <- formula04
+
+# Try a 10-fold cross-validation
+aucs <- rep(0, nrow(train01))
+folds <- createFolds(factor(train01$outcome), 10)
+for (f in folds) {
+    aucs[f] <- predictByGlm(formula, train01[-f, ], train01[f, ])
+}
+auc <- roc(train01$outcome, aucs)$auc
 cat(sprintf("CV AUC: %.5f\n", auc))
 
 predTest <- predictByGlm(formula, trainlog, testlog)

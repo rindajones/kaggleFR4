@@ -77,5 +77,3 @@ testlog <- test
 testlog[,c(-1,-15)] <-  log1p(testlog[,c(-1,-15)])
 
 save(train, test, file = ffile)
-
-
