@@ -54,8 +54,8 @@ for (f in folds) {
 auc <- roc(train01$outcome, aucs)$auc
 cat(sprintf("CV AUC: %.5f\n", auc))
 
-predTest <- predictByGlm(formula, trainlog, testlog)
-result <- data.frame(bidder_id = testlog$bidder_id, prediction = predTest)
+predTest <- predictByGlm(formula, train01, test01)
+result <- data.frame(bidder_id = test01$bidder_id, prediction = predTest)
 
 
 # Add the missing ones.
